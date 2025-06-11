@@ -69,12 +69,14 @@ class ChoiceModel(ABC):
         self.base_alt = self.alternatives[0] if base_alt is None else base_alt
         self.maxiter = maxiter
 
-    def _post_fit(self, optim_res, coeff_names, sample_size, verbose=1, robust=False):
+    def _post_fit(self, optim_res, coeff_names, sample_size, mask=None, verbose=1, robust=False):
         self.convergence = optim_res['success']
         self.coeff_ = optim_res['x']
         self.hess_inv = optim_res['hess_inv']
         self.covariance = self._robust_covariance(optim_res['hess_inv'], optim_res['grad_n']) \
             if robust else optim_res['hess_inv']
+        if mask is not None:
+            self.covariance[mask, mask] = 0
         self.stderr = np.sqrt(np.diag(self.covariance))
         self.zvalues = self.coeff_/self.stderr
         self.pvalues = 2*t.cdf(-np.abs(self.zvalues), df=sample_size)
