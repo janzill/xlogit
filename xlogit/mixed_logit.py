@@ -723,7 +723,7 @@ class MixedLogit(ChoiceModel):
             model = MixedLogit()
             model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
             draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-            model._loglik_gradient(betas, Xd, None, draws, None, None, None, None,
+            model._loglik_gradient(betas, Xd, None, draws, None, None, None, None, None,
                                    batch_size=R, return_gradient=False)
 
             print("{} GPU device(s) available. xlogit will use GPU processing".format(n_gpus))
