@@ -341,9 +341,16 @@ class MixedLogit(ChoiceModel):
             optim_res["hess_inv"] = np.eye(len(optim_res["x"]))
         else:
             if num_hess or optim_method == "L-BFGS-B":
-                optim_res["hess_inv"] = _numerical_hessian(
-                    optim_res["x"], self._loglik_gradient, args=fargs
-                )
+                try:
+                    optim_res["hess_inv"] = _numerical_hessian(
+                        optim_res["x"], self._loglik_gradient, args=fargs
+                    )
+                # TODO: narrow down to actual error here
+                except Exception as e:
+                    warnings.warn(
+                        f"Numerical Hessian calculation failed with {e} - parameters might not be identified"
+                    )
+                    optim_res["hess_inv"] = np.eye(len(optim_res["x"]))
 
         self._post_fit(
             optim_res, coef_names, X.shape[0], mask, fixedvars, verbose, robust
