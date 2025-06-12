@@ -229,9 +229,6 @@ class MixedLogit(ChoiceModel):
                 mask[i] = idx
                 if v is not None:
                     betas[idx] = v
-        #         print(f"mask={mask}, idx={idx}, from k={k}, v={v}")
-        # print(f"betas = {betas}")
-        # print(f"coef_names = {coef_names}")
 
         Xd, scale_d, addit_d, avail = diff_nonchosen_chosen(X, y, scale, addit, avail)  # Setup Xd as Xij - Xi*
         fargs = (Xd, panels, draws, weights, avail, scale_d, addit_d, mask, batch_size)
@@ -445,9 +442,7 @@ class MixedLogit(ChoiceModel):
             avail = avail.reshape(N, J)
 
         # Generate draws
-        # n_samples = N if panels is None else panels[-1] + 1  # panel fix according to https://github.com/rakow/xlogit
         n_samples = N if panels is None else np.max(panels) + 1
-        print(f"N={N}, panels={panels}, last={panels[-1]}, max={np.max(panels)}")
         draws = self._generate_draws(n_samples, R, halton, halton_opts=halton_opts)
         draws = draws if panels is None else draws[panels]  # (N,Kr,R)
       

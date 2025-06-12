@@ -78,7 +78,9 @@ class ChoiceModel(ABC):
         if mask is not None:
             self.covariance[mask, mask] = 0
         self.stderr = np.sqrt(np.diag(self.covariance))
-        self.zvalues = self.coeff_/self.stderr
+        # masked values lead to zero division warning - ignore
+        with np.errstate(divide='ignore'):
+            self.zvalues = self.coeff_/self.stderr
         self.pvalues = 2*t.cdf(-np.abs(self.zvalues), df=sample_size)
         self.loglikelihood = -optim_res['fun']
         self.estimation_message = optim_res['message']
@@ -90,7 +92,6 @@ class ChoiceModel(ABC):
         self.bic = np.log(sample_size)*len(self.coeff_) - 2*self.loglikelihood
         self.grad_n = optim_res['grad_n']
         self.total_fun_eval = optim_res['nfev']
-
 
         if not self.convergence and verbose > 0:
             print("**** The optimization did not converge after {} "
@@ -252,6 +253,13 @@ class ChoiceModel(ABC):
         print("Log-Likelihood= {:.3f}".format(self.loglikelihood))
         print("AIC= {:.3f}".format(self.aic))
         print("BIC= {:.3f}".format(self.bic))
+
+    def coefficients_df(self):
+        import pandas as pd
+        return pd.DataFrame(
+            data=zip(self.coeff_names, self.coeff_, self.stderr, self.zvalues),
+            columns=["coefficient_name", "value", "std err", "z-val"]
+        ).set_index("coefficient_name")
 
 
 def diff_nonchosen_chosen(X, y, scale, addit, avail):
