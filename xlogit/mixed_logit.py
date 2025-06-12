@@ -13,6 +13,7 @@ from scipy.stats import truncnorm
 
 TN = truncnorm(0, np.inf)
 
+# avoid numerical under/overflow in exp(util) expressions assuming float64 precision
 UTIL_MAX = 700
 
 """
@@ -544,9 +545,9 @@ class MixedLogit(ChoiceModel):
             # Utility for random parameters
             Br = self._transform_rand_betas(betas, draws_)  # Get random coefficients
             Vr = dev.cust_einsum("njk,nkr -> njr", Xr, Br)  # (N,J-1,R)
-
-            eV = dev.np.exp(lambdac * (Vf[:, :, None] + Vr - sca + addit))
-            Vr, Br = None, None  # Release memory
+            Vd = lambdac * (Vf[:, :, None] + Vr - sca + addit)
+            eV = dev.np.exp(dev.np.clip(Vd, -UTIL_MAX, UTIL_MAX))
+            Vr, Br, Vd = None, None, None  # Release memory
 
             eV = eV if avail is None else eV * avail[:, :, None]
             proba_ = eV / dev.np.sum(eV, axis=1, keepdims=True)  # (N,J,R)
@@ -730,10 +731,7 @@ class MixedLogit(ChoiceModel):
 
             Vd = Vdf[:, :, None] + Vdr - scad + additd
 
-            # avoid numerical 0 and inf, assuming float64 precision.
-            if dev.np.abs(dev.np.max(Vd)) > UTIL_MAX:
-                Vd = dev.np.clip(Vd, -UTIL_MAX, UTIL_MAX)
-            eVd = dev.np.exp(Vd)
+            eVd = dev.np.exp(dev.np.clip(Vd, -UTIL_MAX, UTIL_MAX))
 
             Vdr, Br, Vd = None, None, None  # Release memory
             eVd = (
@@ -814,7 +812,10 @@ class MixedLogit(ChoiceModel):
         """Apply the mixing distribution to the random betas."""
         for k, dist in enumerate(self._rvdist):
             if dist == "ln":
-                betas_random[:, k, :] = dev.np.exp(betas_random[:, k, :])
+                # clip to avoid over/underflow
+                betas_random[:, k, :] = dev.np.exp(
+                    betas_random[:, k, :].clip(-UTIL_MAX, UTIL_MAX)
+                )
             elif dist == "tn":
                 betas_random[:, k, :] = betas_random[:, k, :] * (
                     betas_random[:, k, :] > 0
