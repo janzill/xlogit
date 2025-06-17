@@ -89,10 +89,11 @@ def test_bfgs_rosenbrock():
         x0,
         args,
         maxiter=5000,
-        tol=1e-10,
-        gtol=1e-4,
+        tol=1e-12,
+        gtol=1e-8,
         disp=False,
         restart=True,
+        use_norm_gtol=True,
     )
     assert result["success"], f"BFGS did not converge: {result['message']}"
 
@@ -110,7 +111,7 @@ def test_bfgs_rosenbrock():
         jac=jac,
         method="BFGS",
         tol=1e-10,
-        options={"gtol": 1e-4, "maxiter": 1000},
+        options={"gtol": 1e-8, "maxiter": 1000},
     )
 
     print(result["x"], result["grad"], result["fun"], result["message"])
@@ -152,6 +153,7 @@ def test_bfgs_vs_scipy_himmelblau():
         gtol=1e-6,
         disp=False,
         restart=True,
+        use_norm_gtol=True,
     )
 
     # Scipy BFGS

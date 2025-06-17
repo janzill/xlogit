@@ -13,6 +13,7 @@ def _bfgs(
     disp=False,
     hinv_init="",  # identity
     restart=False,
+    use_norm_gtol=False,
 ):
     """BFGS optimization routine."""
 
@@ -82,8 +83,12 @@ def _bfgs(
             if nit % 50 == 0:
                 print(f"Current parameter values: {x}")
 
-        # if g_norm < gtol:
-        if gproj < gtol:
+        if use_norm_gtol:
+            tol_check = g_norm
+        else:
+            tol_check = gproj
+
+        if tol_check < gtol:
             convergence = True
             message = "The gradients are close to zero"
             break
