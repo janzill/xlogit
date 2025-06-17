@@ -327,6 +327,16 @@ class MixedLogit(ChoiceModel):
         fargs = (Xd, panels, draws, weights, avail, scale_d, addit_d, mask, batch_size)
         if scale_factor is not None:
             optim_method = "L-BFGS-B"
+
+        # bounds to keep std dev positive - only in effect for L-BFGS-B
+        def foo(x):
+            if x:
+                return (0, float("inf"))
+            else:
+                return (float("-inf"), float("inf"))
+
+        bounds = [foo(x) for x in ["sd." in x for x in coef_names]]
+
         optim_res = _minimize(
             self._loglik_gradient,
             betas,
@@ -334,6 +344,7 @@ class MixedLogit(ChoiceModel):
             method=optim_method,
             tol=tol["ftol"],
             options={"gtol": tol["gtol"], "maxiter": maxiter, "disp": verbose > 1},
+            bounds=bounds,
         )
 
         num_hess = num_hess if scale_factor is None else True

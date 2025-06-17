@@ -71,11 +71,24 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
     return {'success': convergence, 'x': x, 'fun': res, 'message': message,
             'hess_inv': Hinv, 'grad_n':grad_n, 'grad':g, 'nit': nit, 'nfev': nfev, 'njev': njev}
     
-def _minimize(loglik_fn, x, args, method, tol, options):
+def _minimize(loglik_fn, x, args, method, tol, options, bounds=None):
     if method == "BFGS":
+        if bounds is not None:
+            print(
+                "Bounds set but optimization method BFGS will ignore these. Use L-BFGS-B for constrained optimization."
+            )
         return _bfgs(loglik_fn, x, args=args, tol=tol, **options)
     elif method == "L-BFGS-B":
-        return minimize(loglik_fn, x, args=args, jac=True, method='L-BFGS-B', tol=tol, options=options)
+        return minimize(
+            loglik_fn,
+            x,
+            args=args,
+            jac=True,
+            method="L-BFGS-B",
+            tol=tol,
+            options=options,
+            bounds=bounds,
+        )
     else:
         raise ValueError(f"Unknown optimization method: {method}")
         
