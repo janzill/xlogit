@@ -108,23 +108,23 @@ def _bfgs(
             continue
 
         ###
-        Hinv = (
-            Hinv
-            + (
-                ((s_dot_y + (delta_g[None, :].dot(Hinv)).dot(delta_g)) * np.outer(s, s))
-                / (s_dot_y) ** 2
-            )
-            - (
-                (np.outer(Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv))
-                / s_dot_y
-            )
-        )
+        # Hinv = (
+        #     Hinv
+        #     + (
+        #         ((s_dot_y + (delta_g[None, :].dot(Hinv)).dot(delta_g)) * np.outer(s, s))
+        #         / (s_dot_y) ** 2
+        #     )
+        #     - (
+        #         (np.outer(Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv))
+        #         / s_dot_y
+        #     )
+        # )
         ###
         # # Standard BFGS update formula
-        # rho = 1.0 / s_dot_y
-        # Id = np.eye(len(x))
-        # V = Id - rho * np.outer(s, delta_g)
-        # Hinv = V @ Hinv @ V.T + rho * np.outer(s, s)
+        rho = 1.0 / s_dot_y
+        Id = np.eye(len(x))
+        V = Id - rho * np.outer(s, delta_g)
+        Hinv = V @ Hinv @ V.T + rho * np.outer(s, s)
         ###
 
     if step_tol_failed:
