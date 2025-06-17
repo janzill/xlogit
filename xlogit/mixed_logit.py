@@ -328,14 +328,16 @@ class MixedLogit(ChoiceModel):
         if scale_factor is not None:
             optim_method = "L-BFGS-B"
 
-        # bounds to keep std dev positive - only in effect for L-BFGS-B
-        def foo(x):
-            if x:
-                return (0, float("inf"))
-            else:
-                return (float("-inf"), float("inf"))
+        bounds = None
+        if optim_method == "L-BFGS-B":
+            # bounds to keep std dev positive - only in effect for
+            def foo(x):
+                if x:
+                    return (0, float("inf"))
+                else:
+                    return (float("-inf"), float("inf"))
 
-        bounds = [foo(x) for x in ["sd." in x for x in coef_names]]
+            bounds = [foo(x) for x in ["sd." in x for x in coef_names]]
 
         optim_res = _minimize(
             self._loglik_gradient,
@@ -349,7 +351,7 @@ class MixedLogit(ChoiceModel):
 
         num_hess = num_hess if scale_factor is None else True
 
-        if optim_method == "L-BFGS-B":
+        if (optim_method == "L-BFGS-B") or (optim_method == "BFGS-scipy"):
             optim_res["grad_n"] = self._loglik_gradient(
                 optim_res["x"], *fargs, return_gradient=True
             )[2]
@@ -357,7 +359,11 @@ class MixedLogit(ChoiceModel):
         if skip_std_errs:
             optim_res["hess_inv"] = np.eye(len(optim_res["x"]))
         else:
-            if num_hess or optim_method == "L-BFGS-B":
+            if (
+                num_hess
+                or (optim_method == "L-BFGS-B")
+                or (optim_method == "BFGS-scipy")
+            ):
                 try:
                     optim_res["hess_inv"] = _numerical_hessian(
                         optim_res["x"], self._loglik_gradient, args=fargs

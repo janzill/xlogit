@@ -1,11 +1,14 @@
 import numpy as np
-from scipy.optimize import minimize, approx_fprime
+from scipy.optimize import minimize, approx_fprime, line_search
 
 def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10, disp=False):
     """BFGS optimization routine."""
     
     res, g, grad_n = loglik_fn(x, *args, **{'return_gradient': True})
-    Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+
+    # Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+    Hinv = np.eye(len(g))
+
     convergence = False
     step_tol_failed = False
     nit, nfev, njev = 0, 1, 1
@@ -14,21 +17,27 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
 
         d = -Hinv.dot(g)
 
-        step = 2
-        while True:
-            step = step/2
-            s = step*d
-            resnew = loglik_fn(x + s, *args, **{'return_gradient': False})
-            nfev += 1
-            if step > step_tol:
-                if resnew <= res or step < step_tol:
-                    x = x + s
-                    resnew, gnew, grad_n = loglik_fn(x, *args, **{'return_gradient': True})
-                    njev += 1
-                    break
-            else:
-                step_tol_failed = True
-                break
+        # Define functions for scipy's line_search
+        def f(x):
+            return loglik_fn(x, *args, **{"return_gradient": False})
+
+        def fprime(x):
+            _, grad, _ = loglik_fn(x, *args, **{"return_gradient": True})
+            return grad
+
+        # Perform line search along direction d
+        ls_result = line_search(f, fprime, x, d, g)
+        step = ls_result[0]  # alpha
+
+        if step is None or step < step_tol:
+            step_tol_failed = True
+            # break
+
+        s = step * d
+        x = x + s
+        resnew, gnew, grad_n = loglik_fn(x, *args, **{"return_gradient": True})
+        njev += 1
+        nfev += ls_result[3] if ls_result[3] is not None else 1
 
         nit += 1
 
@@ -41,11 +50,15 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
         res = resnew
         g = gnew
         gproj = np.abs(np.dot(d, old_g))
+        g_norm = np.linalg.norm(g)
         
         if disp:
-            print(f"Iteration: {nit} \t Log-Lik.= {resnew:.3f} \t |proj g|= {gproj:e}")
+            print(
+                f"Iteration: {nit} \t Log-Lik.= {resnew:.3f} \t |proj g|= {gproj:e} \t norm(g) = {g_norm:e}"
+            )
 
-        if gproj < gtol:
+        # if gproj < gtol:
+        if g_norm < gtol:
             convergence = True
             message = "The gradients are close to zero"
             break
@@ -67,7 +80,7 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
                 Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                 (s.dot(delta_g)))
 
-    Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+    # Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
     return {'success': convergence, 'x': x, 'fun': res, 'message': message,
             'hess_inv': Hinv, 'grad_n':grad_n, 'grad':g, 'nit': nit, 'nfev': nfev, 'njev': njev}
     
@@ -88,6 +101,15 @@ def _minimize(loglik_fn, x, args, method, tol, options, bounds=None):
             tol=tol,
             options=options,
             bounds=bounds,
+        )
+    elif method == "BFGS-scipy":
+        return minimize(
+            loglik_fn,
+            x,
+            args=args,
+            jac=True,
+            method="BFGS",
+            options=options,
         )
     else:
         raise ValueError(f"Unknown optimization method: {method}")
