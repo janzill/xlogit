@@ -6,8 +6,8 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
     
     res, g, grad_n = loglik_fn(x, *args, **{'return_gradient': True})
 
-    # Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
-    Hinv = np.eye(len(g))
+    Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+    # Hinv = np.eye(len(g))
 
     convergence = False
     step_tol_failed = False
@@ -67,7 +67,7 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
 
         if np.abs(res - old_res) < tol:
             convergence = True
-            message = "Succesive log-likelihood values within tolerance limits"
+            message = "Successive log-likelihood values within tolerance limits"
             break
 
         if nit > maxiter:
@@ -83,6 +83,9 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
                 (s.dot(delta_g)))
 
     # Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+    if disp:
+        print(f"Convergence = {convergence}. {message}.")
+
     return {'success': convergence, 'x': x, 'fun': res, 'message': message,
             'hess_inv': Hinv, 'grad_n':grad_n, 'grad':g, 'nit': nit, 'nfev': nfev, 'njev': njev}
     
