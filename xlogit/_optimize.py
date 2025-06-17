@@ -30,8 +30,10 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
         step = ls_result[0]  # alpha
 
         if step is None or step < step_tol:
-            step_tol_failed = True
-            # break
+            convergence = False
+            message = "Local search could not find a higher log likelihood value"
+            # step_tol_failed = True
+            break
 
         s = step * d
         x = x + s
@@ -41,10 +43,10 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
 
         nit += 1
 
-        if step_tol_failed:
-            convergence = False
-            message = "Local search could not find a higher log likelihood value"
-            break
+        # if step_tol_failed:
+        #     convergence = False
+        #     message = "Local search could not find a higher log likelihood value"
+        #     break
         
         old_res = res
         res = resnew
