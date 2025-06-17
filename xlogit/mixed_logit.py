@@ -312,6 +312,11 @@ class MixedLogit(ChoiceModel):
                 idx = np.where(coef_names == k)[0]
                 if len(idx) == 0:
                     raise ValueError(f"Variable {k} not found in the model.")
+                if len(idx) > 1:
+                    raise ValueError(
+                        f"Variable {k} found more than once, this should never happen."
+                    )
+                idx = idx[0]
                 mask[i] = idx
                 if v is not None:
                     betas[idx] = v
