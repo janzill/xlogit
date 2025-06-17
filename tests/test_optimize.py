@@ -114,8 +114,8 @@ def test_bfgs_rosenbrock():
     )
 
     print(result["x"], result["grad"], result["fun"], result["message"])
-    # np.testing.assert_allclose(result["grad"], scipy_result.jac, atol=1e-4)
-    # np.testing.assert_allclose(result["fun"], scipy_result.fun, atol=1e-6)
+    np.testing.assert_allclose(result["grad"], scipy_result.jac, atol=1e-4)
+    np.testing.assert_allclose(result["fun"], scipy_result.fun, atol=1e-6)
     print(scipy_result.x, scipy_result.jac, scipy_result.fun)
 
     np.testing.assert_allclose(result["x"], np.ones_like(x0), atol=1e-3)
