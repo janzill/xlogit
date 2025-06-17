@@ -82,8 +82,8 @@ def _bfgs(
             if nit % 50 == 0:
                 print(f"Current parameter values: {x}")
 
-        # if gproj < gtol:
-        if g_norm < gtol:
+        # if g_norm < gtol:
+        if gproj < gtol:
             convergence = True
             message = "The gradients are close to zero"
             break
