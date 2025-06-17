@@ -10,7 +10,6 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
     # Hinv = np.eye(len(g))
 
     convergence = False
-    step_tol_failed = False
     nit, nfev, njev = 0, 1, 1
     while True:
         old_g = g
@@ -32,7 +31,6 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
         if step is None or step < step_tol:
             convergence = False
             message = "Local search could not find a higher log likelihood value"
-            # step_tol_failed = True
             break
 
         s = step * d
@@ -43,11 +41,6 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
 
         nit += 1
 
-        # if step_tol_failed:
-        #     convergence = False
-        #     message = "Local search could not find a higher log likelihood value"
-        #     break
-        
         old_res = res
         res = resnew
         g = gnew
@@ -77,10 +70,18 @@ def _bfgs(loglik_fn, x, args, maxiter=2000, tol=1e-10, gtol=1e-6, step_tol=1e-10
 
         delta_g = g - old_g
 
+        ###
         Hinv = Hinv + (((s.dot(delta_g) + (delta_g[None, :].dot(Hinv)).dot(
             delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
                 Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                 (s.dot(delta_g)))
+        ###
+        # rho = 1.0 / np.dot(delta_g, s)
+        # Id = np.eye(len(x))
+        # Hinv = (Id - rho * np.outer(s, delta_g)) @ Hinv @ (
+        #     Id - rho * np.outer(delta_g, s)
+        # ) + rho * np.outer(s, s)
+        ###
 
     # Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
     if disp:
