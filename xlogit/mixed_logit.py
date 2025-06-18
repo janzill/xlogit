@@ -250,6 +250,7 @@ class MixedLogit(ChoiceModel):
 
         if mnl_init and init_coeff is None:
             # Initialize coefficients using a multinomial logit model
+            print("Pre-fitting MNL model as inital guess for MXL coefficients.")
             mnl = MultinomialLogit()
             mnl.fit(
                 X,
@@ -269,6 +270,7 @@ class MixedLogit(ChoiceModel):
             init_coeff = (
                 init_coeff if scale_factor is None else np.append(init_coeff, 1.0)
             )
+            print("Done pre-fitting MNL model.")
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
 
