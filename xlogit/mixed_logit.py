@@ -298,7 +298,13 @@ class MixedLogit(ChoiceModel):
             )
         )
 
-        tol = {"ftol": 1e-10, "gtol": 1e-6}
+        tol = {
+            "ftol": 1e-10,
+            "gtol": 1e-6,
+            "use_norm_gtol": False,
+            "maxiter_ls": 10,
+            "restart_hinv": True,
+        }
         if tol_opts is not None:
             tol.update(tol_opts)
 
@@ -331,15 +337,16 @@ class MixedLogit(ChoiceModel):
             optim_method = "L-BFGS-B"
 
         bounds = None
-        if optim_method == "L-BFGS-B":
+        using_bounds = False
+        if using_bounds:
             # bounds to keep std dev positive - only in effect for
-            def foo(x):
+            def bounds_for_val(x):
                 if x:
                     return (0, float("inf"))
                 else:
                     return (float("-inf"), float("inf"))
 
-            bounds = [foo(x) for x in ["sd." in x for x in coef_names]]
+            bounds = [bounds_for_val(x) for x in ["sd." in x for x in coef_names]]
 
         optim_res = _minimize(
             self._loglik_gradient,
@@ -347,7 +354,14 @@ class MixedLogit(ChoiceModel):
             args=fargs,
             method=optim_method,
             tol=tol["ftol"],
-            options={"gtol": tol["gtol"], "maxiter": maxiter, "disp": verbose > 1},
+            options={
+                "gtol": tol["gtol"],
+                "maxiter": maxiter,
+                "disp": verbose > 1,
+                "use_norm_gtol": tol["use_norm_gtol"],
+                "maxiter_ls": tol["maxiter_ls"],
+                "restart_hinv": tol["restart_hinv"],
+            },
             bounds=bounds,
         )
 

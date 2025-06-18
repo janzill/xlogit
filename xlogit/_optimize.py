@@ -14,6 +14,8 @@ def _bfgs(
     hinv_init="",  # identity
     restart=False,
     use_norm_gtol=False,
+    maxiter_ls=10,
+    restart_hinv=True,
 ):
     """BFGS optimization routine."""
 
@@ -46,8 +48,10 @@ def _bfgs(
 
         # Perform line search along direction d
         try:
-            ls_result = line_search(f, fprime, x, d, g)
-            step = ls_result[0]  # alpha
+            ls_result = line_search(
+                f, fprime, x, d, g, maxiter=maxiter_ls
+            )  # , #, old_fval=old_res, c1=1e-4, c2=0.9, maxiter=20
+            step = ls_result[0]
 
             if step is None or step < step_tol:
                 step_tol_failed = True
@@ -60,7 +64,10 @@ def _bfgs(
             # Evaluate at new position
             res, g, grad_n = loglik_fn(x, *args, **{"return_gradient": True})
             njev += 1
-            nfev += ls_result[3] if ls_result[3] is not None else 1
+            # num function evals
+            nfev += ls_result[1] if ls_result[1] is not None else 1
+            # num gradient evals - current setup means we calculate these separately
+            nfev += ls_result[2] if ls_result[2] is not None else 1
         except Exception as e:
             step_tol_failed = True
             message = f"Line search failed: {e}"
@@ -131,6 +138,17 @@ def _bfgs(
         V = Id - rho * np.outer(s, delta_g)
         Hinv = V @ Hinv @ V.T + rho * np.outer(s, s)
         ###
+
+        # Reset Hessian approximation every 50 iterations or when progress is slow
+        if restart_hinv and (
+            (nit % 50 == 0) or (nit > 10 and abs(res - old_res) < tol * 10.0)
+        ):
+            if hinv_init == "identity":
+                Hinv = np.eye(len(g))
+            else:
+                Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+            if disp:
+                print(f"Resetting Hessian at iteration {nit}")
 
     if step_tol_failed:
         convergence = False
