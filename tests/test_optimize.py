@@ -150,7 +150,7 @@ def test_bfgs_vs_scipy_himmelblau():
         args,
         maxiter=1000,
         tol=1e-8,
-        gtol=1e-6,
+        gtol=1e-8,
         disp=False,
         restart=True,
         use_norm_gtol=True,
@@ -170,7 +170,7 @@ def test_bfgs_vs_scipy_himmelblau():
         jac=jac,
         method="BFGS",
         tol=1e-8,
-        options={"gtol": 1e-6, "maxiter": 1000},
+        options={"gtol": 1e-8, "maxiter": 1000},
     )
 
     # Both should converge to a minimum (one of the four)
