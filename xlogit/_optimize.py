@@ -31,9 +31,11 @@ def _bfgs(
     nit, nfev, njev = 0, 1, 1
     message = ""
 
+    old_res = None
     while True:
         old_g = g.copy()
-        old_res = res
+        old_old_res = old_res.copy() if nit > 1 else None
+        old_res = res.copy() if nit > 0 else None
 
         # search direction
         d = -Hinv.dot(g)
@@ -49,7 +51,14 @@ def _bfgs(
         # Perform line search along direction d
         try:
             ls_result = line_search(
-                f, fprime, x, d, g, maxiter=maxiter_ls
+                f,
+                fprime,
+                x,
+                d,
+                g,
+                maxiter=maxiter_ls,
+                old_fval=old_res,
+                old_old_fval=old_old_res,
             )  # , #, old_fval=old_res, c1=1e-4, c2=0.9, maxiter=20
             step = ls_result[0]
 
@@ -100,7 +109,7 @@ def _bfgs(
             message = "The gradients are close to zero"
             break
 
-        if np.abs(res - old_res) < tol:
+        if (nit > 2) and np.abs(res - old_res) < tol:
             convergence = False
             message = "Successive log-likelihood values within tolerance limits"
             break
