@@ -16,6 +16,7 @@ def _bfgs(
     use_norm_gtol=False,
     maxiter_ls=10,
     restart_hinv=True,
+    naive_line_search=False,
 ):
     """BFGS optimization routine."""
 
@@ -49,38 +50,60 @@ def _bfgs(
             return grad
 
         # Perform line search along direction d
-        try:
-            ls_result = line_search(
-                f,
-                fprime,
-                x,
-                d,
-                g,
-                maxiter=maxiter_ls,
-                old_fval=old_res,
-                old_old_fval=old_old_res,
-            )  # , #, old_fval=old_res, c1=1e-4, c2=0.9, maxiter=20
-            step = ls_result[0]
+        if naive_line_search:
+            step = 2
+            while True:
+                step = step / 2
+                s = step * d
+                resnew = loglik_fn(x + s, *args, **{"return_gradient": False})
+                nfev += 1
+                if step > step_tol:
+                    if resnew <= res or step < step_tol:
+                        x = x + s
+                        res, g, grad_n = loglik_fn(
+                            x, *args, **{"return_gradient": True}
+                        )
+                        njev += 1
+                        break
+                else:
+                    step_tol_failed = True
+                    message = "Naive line search failed"
+                    break
+        else:
+            try:
+                ls_result = line_search(
+                    f,
+                    fprime,
+                    x,
+                    d,
+                    g,
+                    maxiter=maxiter_ls,
+                    old_fval=old_res,
+                    old_old_fval=old_old_res,
+                )  # , #, old_fval=old_res, c1=1e-4, c2=0.9, maxiter=20
+                step = ls_result[0]
 
-            if step is None or step < step_tol:
+                if step is None or step < step_tol:
+                    step_tol_failed = True
+                    message = (
+                        "Local search could not find a higher log likelihood value"
+                    )
+                    break
+
+                # update position
+                s = step * d
+                x = x + s
+                # Evaluate at new position
+                res, g, grad_n = loglik_fn(x, *args, **{"return_gradient": True})
+                njev += 1
+                # num function evals
+                nfev += ls_result[1] if ls_result[1] is not None else 1
+                # num gradient evals - current setup means we calculate these separately
+                nfev += ls_result[2] if ls_result[2] is not None else 1
+            except Exception as e:
                 step_tol_failed = True
-                message = "Local search could not find a higher log likelihood value"
+                message = f"Line search failed: {e}"
                 break
-
-            # update position
-            s = step * d
-            x = x + s
-            # Evaluate at new position
-            res, g, grad_n = loglik_fn(x, *args, **{"return_gradient": True})
-            njev += 1
-            # num function evals
-            nfev += ls_result[1] if ls_result[1] is not None else 1
-            # num gradient evals - current setup means we calculate these separately
-            nfev += ls_result[2] if ls_result[2] is not None else 1
-        except Exception as e:
-            step_tol_failed = True
-            message = f"Line search failed: {e}"
-            break
 
         nit += 1
 

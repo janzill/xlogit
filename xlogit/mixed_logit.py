@@ -304,6 +304,7 @@ class MixedLogit(ChoiceModel):
             "use_norm_gtol": False,
             "maxiter_ls": 10,
             "restart_hinv": True,
+            "naive_line_search": False,
         }
         if tol_opts is not None:
             tol.update(tol_opts)
@@ -361,6 +362,7 @@ class MixedLogit(ChoiceModel):
                 "use_norm_gtol": tol["use_norm_gtol"],
                 "maxiter_ls": tol["maxiter_ls"],
                 "restart_hinv": tol["restart_hinv"],
+                "naive_line_search": tol["naive_line_search"],
             },
             bounds=bounds,
         )
