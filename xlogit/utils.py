@@ -53,7 +53,7 @@ def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
     if any(col in varying for col in dataframe.columns):
         raise ValueError("varying can't be identical to a column name")
     if alt_name in dataframe.columns:
-        raise ValueError("alt_name can't be identical to a column name")
+        raise ValueError(f"alt_name {alt_name} can't be identical to a column name")
     
     # Initialize new dataframe with id and alt columns
     newcols = {

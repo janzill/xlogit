@@ -13,6 +13,9 @@ Notations
     K : Number of variables
 """
 
+# avoid numerical under/overflow in exp(util) expressions assuming float64 precision
+UTIL_MAX = 700
+
 _unpack_tuple = lambda x : x if len(x) > 1 else x[0]
 
 class MultinomialLogit(ChoiceModel):
@@ -258,7 +261,7 @@ class MultinomialLogit(ChoiceModel):
         betas = betas if scale_factor is None else betas[:-1]
 
         #=== 2. Compute choice probabilities
-        eV = np.exp(lambdac*(X.dot(betas) - sca + addit))
+        eV = np.exp((lambdac * (X.dot(betas) - sca + addit)).clip(-UTIL_MAX, UTIL_MAX))
         eV = eV if avail is None else eV*avail
         proba = eV/np.sum(eV, axis=1, keepdims=True)  # (N,J)
         
@@ -324,7 +327,7 @@ class MultinomialLogit(ChoiceModel):
         additd = 0 if addit_d is None else lambdac*addit_d
         #p = self._compute_probabilities(betas, X, avail)
         Vd = np.einsum('njk,k -> nj', Xd, betas) - scad + additd
-        eVd = np.exp(Vd)
+        eVd = np.exp(Vd.clip(-UTIL_MAX, UTIL_MAX))
         eVd = eVd if avail is None else eVd*avail # Availablity of alts.
         proba = 1/(1+eVd.sum(axis=1))  # (N, )
         

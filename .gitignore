@@ -6,6 +6,8 @@
 /build/
 /.idea/
 
+dev
+
 scratchp.py
 examples/benchmark/Rprof.out
 # Python egg metadata, regenerated from source files by setuptools.
